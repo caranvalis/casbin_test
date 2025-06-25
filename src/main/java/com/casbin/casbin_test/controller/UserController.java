@@ -1,9 +1,12 @@
 package com.casbin.casbin_test.controller;
 
+import com.casbin.casbin_test.model.User;
 import com.casbin.casbin_test.service.AuthorizationService;
+import com.casbin.casbin_test.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,22 +14,56 @@ import java.util.List;
 
 @Tag(name = "Utilisateurs", description = "Gestion des utilisateurs, rôles et permissions")
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/users")
 public class UserController {
 
-    @Autowired
-    private AuthorizationService authorizationService;
+    private final UserService userService;
+    private final AuthorizationService authorizationService;
 
-    @Operation(summary = "Liste les utilisateurs")
-    @GetMapping("/users")
-    public ResponseEntity<String> getUsers() {
-        return ResponseEntity.ok("Liste des utilisateurs");
+    @Autowired
+    public UserController(UserService userService, AuthorizationService authorizationService) {
+        this.userService = userService;
+        this.authorizationService = authorizationService;
+    }
+
+    @Operation(summary = "Liste tous les utilisateurs")
+    @GetMapping
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(userService.findAll());
+    }
+
+    @Operation(summary = "Récupère un utilisateur par ID")
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable String id) {
+        User user = userService.findById(id);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(user);
     }
 
     @Operation(summary = "Crée un utilisateur")
-    @PostMapping("/users")
-    public ResponseEntity<String> createUser() {
-        return ResponseEntity.ok("Utilisateur créé");
+    @PostMapping
+    public ResponseEntity<User> createUser(@RequestBody User user) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.save(user));
+    }
+
+    @Operation(summary = "Met à jour un utilisateur")
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable String id, @RequestBody User user) {
+        user.setId(id);
+        try {
+            return ResponseEntity.ok(userService.update(user));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @Operation(summary = "Supprime un utilisateur")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
+        userService.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Récupère le profil utilisateur")
@@ -35,7 +72,7 @@ public class UserController {
         return ResponseEntity.ok("Profil utilisateur");
     }
 
-    @Operation(summary = "Ajoute une permission à un utilisateur (admin seulement)")
+    @Operation(summary = "Ajoute une permission à un utilisateur")
     @PostMapping("/permissions")
     public ResponseEntity<String> addPermission(
             @RequestParam String user,
@@ -55,7 +92,7 @@ public class UserController {
     }
 
     @Operation(summary = "Liste les rôles d'un utilisateur")
-    @GetMapping("/roles/{user}")
+    @GetMapping("/{user}/roles")
     public ResponseEntity<List<String>> getUserRoles(@PathVariable String user) {
         List<String> roles = authorizationService.getRolesForUser(user);
         return ResponseEntity.ok(roles);

@@ -17,7 +17,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        // Récupérer l'utilisateur depuis le token JWT ou la session
+        //  flop cass de Récupérer l'utilisateur depuis le token JWT ou la session
         String currentUser = getCurrentUser(request);
 
         if (currentUser == null) {
@@ -28,7 +28,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
         String uri = request.getRequestURI();
         String method = request.getMethod();
 
-        // Vérifier l'autorisation
+        // ekie c'est juste pour verifier si l'utilisateur a les permissions nécessaires
         if (!authorizationService.hasPermission(currentUser, uri, method)) {
             response.setStatus(HttpStatus.FORBIDDEN.value());
             return false;
@@ -38,7 +38,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
     }
 
     private String getCurrentUser(HttpServletRequest request) {
-        // Implémentation pour récupérer l'utilisateur actuel
+        // na this is Implémentation pour récupérer l'utilisateur actuel
         // Par exemple depuis un token JWT ou une session
         return request.getHeader("X-User"); // Exemple simple
     }
