@@ -1,45 +1,87 @@
 package com.casbin.casbin_test.model;
 
-import lombok.Data;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Data
+@Table("users")
 public class User {
+
+    @Id
     private String id;
-    private String name;
+    private String username;
+    private String email;
+    private String role;
     private boolean isAdmin;
 
-    // Constructeur explicite avec tous les arguments
-    public User(String name, boolean isAdmin) {
-        this.id = id;
-        this.name = name;
+    // Constructeur par défaut
+    public User() {}
+
+    // Constructeur pour les tests de document et la persistence en BD
+    public User(String username, String email, String role) {
+        this.username = username;
+        this.email = email;
+        this.role = role;
+        this.isAdmin = "ADMIN".equalsIgnoreCase(role);
+    }
+
+    // Constructeur pour ABAC
+    public User(String username, boolean isAdmin) {
+        this.username = username;
         this.isAdmin = isAdmin;
+        this.role = isAdmin ? "ADMIN" : "USER";
+        this.email = username + "@example.com"; // Valeur par défaut pour les cas ABAC
     }
 
-    // Constructeur sans argument explicite
-    public User() {
-        this.id = "";
-        this.name = "";
-        this.isAdmin = false;
-    }
-
+    // Getters et setters
     public String getId() {
         return id;
     }
 
-    public String getName() {
-        return name;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public boolean getIsAdmin() {
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+        this.isAdmin = "ADMIN".equalsIgnoreCase(role);
+    }
+
+    public boolean isAdmin() {
         return isAdmin;
     }
 
-    public void setId(String id) {
+    public void setAdmin(boolean admin) {
+        isAdmin = admin;
+        if (admin && !"ADMIN".equalsIgnoreCase(role)) {
+            this.role = "ADMIN";
+        }
     }
 
-    public void setUsername(String admin) {
+    public void setName(String username) {
+        this.username = username;
     }
 
-    public void setRole(String admin) {
+    public String getName() {
+        return this.username;
     }
 }

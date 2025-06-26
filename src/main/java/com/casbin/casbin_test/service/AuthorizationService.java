@@ -5,6 +5,9 @@ import org.casbin.jcasbin.main.Enforcer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 
@@ -18,40 +21,49 @@ public class AuthorizationService {
     @Qualifier("abacEnforcer")
     private Enforcer abacEnforcer;
 
-    public boolean hasPermission(String user, String resource, String action) {
-        return enforcer.enforce(user, resource, action);
+    public Mono<Boolean> hasPermission(String user, String resource, String action) {
+        return Mono.fromCallable(() -> enforcer.enforce(user, resource, action))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
-    public boolean addPolicy(String user, String resource, String action) {
-        return enforcer.addPolicy(user, resource, action);
+    public Mono<Boolean> addPolicy(String user, String resource, String action) {
+        return Mono.fromCallable(() -> enforcer.addPolicy(user, resource, action))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
-    public boolean removePolicy(String user, String resource, String action) {
-        return enforcer.removePolicy(user, resource, action);
+    public Mono<Boolean> removePolicy(String user, String resource, String action) {
+        return Mono.fromCallable(() -> enforcer.removePolicy(user, resource, action))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
-    public boolean addRoleForUser(String user, String role) {
-        return enforcer.addRoleForUser(user, role);
+    public Mono<Boolean> addRoleForUser(String user, String role) {
+        return Mono.fromCallable(() -> enforcer.addRoleForUser(user, role))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
-
-    public boolean deleteRoleForUser(String user, String role) {
-        return enforcer.deleteRoleForUser(user, role);
+    public Mono<Boolean> deleteRoleForUser(String user, String role) {
+        return Mono.fromCallable(() -> enforcer.deleteRoleForUser(user, role))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
-
-    public List<String> getRolesForUser(String user) {
-        return enforcer.getRolesForUser(user);
+    public Flux<String> getRolesForUser(String user) {
+        return Mono.fromCallable(() -> enforcer.getRolesForUser(user))
+                .flatMapMany(Flux::fromIterable)
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
-
-    public List<String> getUsersForRole(String role) {
-        return enforcer.getUsersForRole(role);
+    public Flux<String> getUsersForRole(String role) {
+        return Mono.fromCallable(() -> enforcer.getUsersForRole(role))
+                .flatMapMany(Flux::fromIterable)
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
-
-    public boolean hasPermissionAbac(User user, String resource, String action) {
-        return abacEnforcer.enforce(user, resource, action);
+    public Mono<Boolean> hasPermissionAbac(User user, String resource, String action) {
+        return Mono.fromCallable(() -> abacEnforcer.enforce(user, resource, action))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
+    public boolean isAllowed(String bob, String id, String read) {
+        return enforcer.enforce(bob, id, read);
+    }
 }

@@ -13,6 +13,9 @@ public class Document {
     // Ajout de l'attribut manquant
     private Map<String, String> sharedWith;
 
+    private String categoryId;
+    private User owner;
+
     public Document() {
         this.createdAt = new Date();
         this.updatedAt = new Date();
@@ -49,5 +52,18 @@ public class Document {
 
     public void setSharedWith(Map<String, String> sharedWith) {
         this.sharedWith = sharedWith;
+    }
+
+    public String getCategoryId() {
+     return categoryId;
+    }
+    public void setCategoryId(String categoryId) {
+        this.categoryId = categoryId;
+    }
+    public User getOwner() {
+        return owner;
+    }
+    public void setOwner(User owner) {
+    this.owner = owner;
     }
 }

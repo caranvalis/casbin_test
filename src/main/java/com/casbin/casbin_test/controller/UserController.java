@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -28,35 +30,30 @@ public class UserController {
 
     @Operation(summary = "Liste tous les utilisateurs")
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userService.findAll());
+    public List<User> getAllUsers() {
+        return userService.findAll();
     }
 
     @Operation(summary = "Récupère un utilisateur par ID")
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable String id) {
-        User user = userService.findById(id);
-        if (user == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(user);
+    public ResponseEntity<? extends Object> getUserById(@PathVariable String id) {
+        Mono<ResponseEntity<User>> user = userService.findById(id);
+        return user != null ? ResponseEntity.ok(user) : ResponseEntity.notFound().build();
     }
 
     @Operation(summary = "Crée un utilisateur")
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.save(user));
+        User saved = userService.save(user);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @Operation(summary = "Met à jour un utilisateur")
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable String id, @RequestBody User user) {
         user.setId(id);
-        try {
-            return ResponseEntity.ok(userService.update(user));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
+        User updated = userService.update(user);
+        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
     }
 
     @Operation(summary = "Supprime un utilisateur")
@@ -78,7 +75,7 @@ public class UserController {
             @RequestParam String user,
             @RequestParam String resource,
             @RequestParam String action) {
-        boolean added = authorizationService.addPolicy(user, resource, action);
+        boolean added = authorizationService.addPolicy(user, resource, action).block();
         return ResponseEntity.ok("Permission " + (added ? "ajoutée" : "déjà existante"));
     }
 
@@ -87,21 +84,19 @@ public class UserController {
     public ResponseEntity<String> addRole(
             @RequestParam String user,
             @RequestParam String role) {
-        boolean added = authorizationService.addRoleForUser(user, role);
+        boolean added = authorizationService.addRoleForUser(user, role).block();
         return ResponseEntity.ok("Rôle " + (added ? "ajouté" : "déjà existant"));
     }
 
     @Operation(summary = "Liste les rôles d'un utilisateur")
     @GetMapping("/{user}/roles")
-    public ResponseEntity<List<String>> getUserRoles(@PathVariable String user) {
-        List<String> roles = authorizationService.getRolesForUser(user);
-        return ResponseEntity.ok(roles);
+    public List<String> getUserRoles(@PathVariable String user) {
+        return authorizationService.getRolesForUser(user).collectList().block();
     }
 
     @Operation(summary = "Liste les admins")
     @GetMapping("/admins")
-    public ResponseEntity<List<String>> getAdmins() {
-        List<String> admins = authorizationService.getUsersForRole("admin");
-        return ResponseEntity.ok(admins);
+    public List<String> getAdmins() {
+        return authorizationService.getUsersForRole("admin").collectList().block();
     }
 }

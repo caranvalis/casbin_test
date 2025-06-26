@@ -1,7 +1,9 @@
 package com.casbin.casbin_test.service;
 
 import com.casbin.casbin_test.model.User;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,36 +13,44 @@ import java.util.concurrent.ConcurrentHashMap;
 
 // ici c'est un service d'authenfication qui permet de recuper l'id
 @Service
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl extends UserService {
 
     // pour le stockage des users
     private final Map<String, User> users = new ConcurrentHashMap<>();
 
 
     public UserServiceImpl() {
+        super();
         // Créer un administrateur
         User admin = new User();
         admin.setId("admin");
-        admin.setUsername("admin");
+        admin.setUsername("admin"); // Utiliser setUsername au lieu de setName
+        admin.setEmail("admin@example.com"); // Ajout de l'email nécessaire
         admin.setRole("admin");
         users.put(admin.getId(), admin);
 
         // Créer un utilisateur standard
         User user = new User();
         user.setId("user1");
-        user.setUsername("utilisateur");
+        user.setUsername("utilisateur"); // Utiliser setUsername au lieu de setName
+        user.setEmail("user@example.com"); // Ajout de l'email nécessaire
         user.setRole("user");
         users.put(user.getId(), user);
     }
 
     @Override
     public List<User> findAll() {
-        return new ArrayList<>(users.values());
+        return List.of();
     }
 
     @Override
-    public User findById(String id) {
-        return users.get(id);
+    public Mono<ResponseEntity<User>> findById(String id) {
+        User user = users.get(id);
+        if (user != null) {
+            return Mono.just(ResponseEntity.ok(user));
+        } else {
+            return Mono.just(ResponseEntity.notFound().build());
+        }
     }
 
     @Override

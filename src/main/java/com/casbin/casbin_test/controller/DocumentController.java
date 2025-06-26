@@ -1,104 +1,79 @@
 package com.casbin.casbin_test.controller;
 
 import com.casbin.casbin_test.model.Document;
-import com.casbin.casbin_test.model.User;
-import com.casbin.casbin_test.service.AbacAuthorizationService;
-import com.casbin.casbin_test.service.DocumentServiceImpl;
+import com.casbin.casbin_test.service.DocumentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
-
+@Tag(name = "Documents", description = "Gestion des documents")
 @RestController
 @RequestMapping("/api/documents")
 public class DocumentController {
 
-    private final AbacAuthorizationService authorizationService;
-    private final DocumentServiceImpl documentService;
+    private final DocumentService documentService;
 
     @Autowired
-    public DocumentController(AbacAuthorizationService authorizationService, DocumentServiceImpl documentService) {
-        this.authorizationService = authorizationService;
+    public DocumentController(DocumentService documentService) {
         this.documentService = documentService;
     }
 
+    @Operation(summary = "Liste tous les documents")
     @GetMapping
-    public ResponseEntity<List<Document>> getAllDocuments() {
-        return ResponseEntity.ok(documentService.findAll());
+    public Flux<Document> getAllDocuments() {
+        return documentService.findAll(); // Utilisation directe du Flux
     }
 
+    @Operation(summary = "Récupère un document par ID")
     @GetMapping("/{id}")
-    public ResponseEntity<Document> getDocumentById(@PathVariable String id) {
-        Document document = documentService.findById(id);
-        if (document == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(document);
+    public Mono<ResponseEntity<Document>> getDocumentById(@PathVariable String id) {
+        return documentService.findById(id)
+            .map(ResponseEntity::ok)
+            .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
+    @Operation(summary = "Crée un document")
     @PostMapping
-    public ResponseEntity<Document> createDocument(@RequestBody Document document, @RequestAttribute("currentUser") User user) {
-        // Définir l'utilisateur actuel comme créateur de contenu
-        document.setCreatorId(user.getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(documentService.save(document));
+    public Mono<ResponseEntity<Document>> createDocument(@RequestBody Mono<Document> documentMono) {
+        return documentMono
+            .flatMap(documentService::save)
+            .map(savedDoc -> ResponseEntity.status(HttpStatus.CREATED).body(savedDoc));
     }
 
+    @Operation(summary = "Met à jour un document")
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateDocument(@PathVariable String id,
-                                            @RequestBody Document document,
-                                            @RequestAttribute("currentUser") User user) {
-        Document existingDocument = documentService.findById(id);
-        if (existingDocument == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        // je ne sais vraimnent pas si il peut Vérificatier des autorisations avec notre service ABAC
-        if (!authorizationService.canEditDocument(user, existingDocument)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Vous n'êtes pas autorisé à modifier ce document");
-        }
-
-        // Mise à jour du document si autorisé si il veut
-        document.setId(id);
-        document.setCreatorId(existingDocument.getCreatorId()); // Conserver le premier Donman
-        return ResponseEntity.ok(documentService.update(document));
+    public Mono<ResponseEntity<Document>> updateDocument(@PathVariable String id, @RequestBody Mono<Document> documentMono) {
+        return documentMono
+            .flatMap(doc -> {
+                doc.setId(id);
+                return documentService.update(doc);
+            })
+            .map(ResponseEntity::ok)
+            .onErrorResume(IllegalArgumentException.class, e ->
+                Mono.just(ResponseEntity.notFound().build()));
     }
 
+    @Operation(summary = "Supprime un document")
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteDocument(@PathVariable String id,
-                                            @RequestAttribute("currentUser") User user) {
-        Document document = documentService.findById(id);
-        if (document == null) {
-            return ResponseEntity.notFound().build();
-        }
-        if (!authorizationService.checkPermission(user, document, "delete")) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Vous n'êtes pas autorisé à supprimer ce document");
-        }
-
-        documentService.deleteById(id);
-        return ResponseEntity.noContent().build();
+    public Mono<ResponseEntity<Void>> deleteDocument(@PathVariable String id) {
+        return documentService.deleteById(id)
+            .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
 
-        @PostMapping("/{id}/share")
-        public ResponseEntity<?> shareDocument(@PathVariable String id,
-                                               @RequestParam String userId,
-                                               @RequestParam(defaultValue = "read") String permission,
-                                               @RequestAttribute("currentUser") User currentUser) {
-            Document document = documentService.findById(id);
-            if (document == null) {
-                return ResponseEntity.notFound().build();
-            }
+    @Operation(summary = "Recherche des documents par mot-clé")
+    @GetMapping("/search")
+    public Flux<Document> searchDocuments(@RequestParam String keyword) {
+        return documentService.searchByKeyword(keyword); // Utilisation directe du Flux
+    }
 
-            // Vérifier que l'utilisateur actuel a le droit de partager le docs sinon il laisse
-            if (!authorizationService.canShareDocument(currentUser, document)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body("Vous n'êtes pas autorisé à partager ce document");
-            }
-
-            documentService.shareDocument(id, userId, permission);
-            return ResponseEntity.ok("Document partagé avec succès");
-        }
+    @Operation(summary = "Liste les documents par catégorie")
+    @GetMapping("/category/{categoryId}")
+    public Flux<Document> getDocumentsByCategory(@PathVariable String categoryId) {
+        return documentService.findByCategory(categoryId); // Utilisation directe du Flux
+    }
 }
