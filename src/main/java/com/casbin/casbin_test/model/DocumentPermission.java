@@ -1,19 +1,24 @@
 package com.casbin.casbin_test.model;
 
-public class DocumentPermission {
-    private String userId;
-    private String permission; // "read", "write", "delete", etc.
+public enum DocumentPermission {
+    READ("read"),
+    WRITE("write"),
+    DELETE("delete"),
+    EDIT("edit"),
+    SHARE("share");
 
-    public DocumentPermission() {}
+    private final String action;
 
-    public DocumentPermission(String userId, String permission) {
-        this.userId = userId;
-        this.permission = permission;
+    DocumentPermission(String action) {
+        this.action = action;
     }
 
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
+    public String getAction() {
+        return action;
+    }
 
-    public String getPermission() { return permission; }
-    public void setPermission(String permission) { this.permission = permission; }
+    @Override
+    public String toString() {
+        return action;
+    }
 }

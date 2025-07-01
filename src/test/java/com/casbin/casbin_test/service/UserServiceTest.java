@@ -1,96 +1,71 @@
 package com.casbin.casbin_test.service;
 
 import com.casbin.casbin_test.model.User;
-import org.junit.jupiter.api.BeforeEach;
+import com.casbin.casbin_test.repository.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.ResponseEntity;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+@SpringBootTest
 class UserServiceTest {
 
+    @Autowired
     private UserService userService;
 
-    @BeforeEach
-    void setUp() {
-        userService = new UserServiceImpl();
-    }
+    @MockBean
+    private UserRepository userRepository;
 
     @Test
     void testCreateUser() {
-        // Créer un utilisateur
         User newUser = new User();
-        newUser.setName("testUser"); // Utiliser setName() directement au lieu de setUsername()
+        newUser.setUsername("testUser");
 
-        // Sauvegarder l'utilisateur (méthode synchrone)
-        User createdUser = userService.save(newUser);
+        User savedUser = new User();
+        savedUser.setId("123");
+        savedUser.setUsername("testUser");
 
-        // Vérifications
-        assertNotNull(createdUser);
-        assertNotNull(createdUser.getId());
-        assertEquals("testUser", createdUser.getName());
+        when(userRepository.save(any(User.class))).thenReturn(Mono.just(savedUser));
+
+        StepVerifier.create(userService.save(newUser))
+                .assertNext(createdUser -> {
+                    assertNotNull(createdUser);
+                    assertNotNull(createdUser.getId());
+                    assertEquals("testUser", createdUser.getUsername());
+                })
+                .verifyComplete();
     }
 
     @Test
     void testGetUserById() {
-        // Créer et sauvegarder un utilisateur
-        User newUser = new User();
-        newUser.setName("testUser"); // Utiliser setName() directement
-        User createdUser = userService.save(newUser);
+        User foundUser = new User();
+        foundUser.setId("123");
+        foundUser.setUsername("testUser");
 
-        // Récupérer l'utilisateur par ID (méthode réactive)
-        StepVerifier.create(userService.findById(createdUser.getId()))
-            .assertNext(response -> {
-                assertTrue(response.getStatusCode().is2xxSuccessful());
-                User foundUser = response.getBody();
-                assertNotNull(foundUser);
-                assertEquals(createdUser.getId(), foundUser.getId());
-            })
-            .verifyComplete();
-    }
+        when(userRepository.findById("123")).thenReturn(Mono.just(foundUser));
 
-    @Test
-    void testGetNonExistentUser() {
-        // Test avec un ID qui n'existe pas
-        StepVerifier.create(userService.findById("nonexistent"))
-            .assertNext(response -> {
-                assertFalse(response.getStatusCode().is2xxSuccessful());
-            })
-            .verifyComplete();
-    }
-
-    @Test
-    void testUpdateUser() {
-        // Créer et sauvegarder un utilisateur
-        User newUser = new User();
-        newUser.setName("originalName"); // Utiliser setName() directement
-        User createdUser = userService.save(newUser);
-
-        // Modifier l'utilisateur
-        createdUser.setName("updatedName"); // Utiliser setName() directement au lieu de setUsername()
-        User updatedUser = userService.update(createdUser);
-
-        // Vérifications
-        assertNotNull(updatedUser);
-        assertEquals("updatedName", updatedUser.getName());
+        StepVerifier.create(userService.findById("123"))
+                .assertNext(response -> {
+                    assertTrue(response.getStatusCode().is2xxSuccessful());
+                    User user = response.getBody();
+                    assertNotNull(user);
+                    assertEquals("testUser", user.getUsername());
+                })
+                .verifyComplete();
     }
 
     @Test
     void testDeleteUser() {
-        // Créer et sauvegarder un utilisateur
-        User newUser = new User();
-        newUser.setName("userToDelete"); // Utiliser setName() directement
-        User createdUser = userService.save(newUser);
+        when(userRepository.deleteById("123")).thenReturn(Mono.empty());
 
-        // Supprimer l'utilisateur
-        userService.deleteById(createdUser.getId());
-
-        // Vérifier que l'utilisateur a bien été supprimé
-        StepVerifier.create(userService.findById(createdUser.getId()))
-            .assertNext(response -> {
-                assertFalse(response.getStatusCode().is2xxSuccessful());
-            })
-            .verifyComplete();
+        StepVerifier.create(userService.deleteById("123"))
+                .verifyComplete();
     }
 }

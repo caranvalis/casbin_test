@@ -9,20 +9,19 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.List;
-
 @Service
 public class AuthorizationService {
 
     @Autowired
     private Enforcer enforcer;
-
+//
     @Autowired
     @Qualifier("abacEnforcer")
     private Enforcer abacEnforcer;
 
     public Mono<Boolean> hasPermission(String user, String resource, String action) {
         return Mono.fromCallable(() -> enforcer.enforce(user, resource, action))
+                .doOnNext(result -> System.out.println("Permission check: " + user + ", " + resource + ", " + action + " = " + result))
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -62,8 +61,16 @@ public class AuthorizationService {
         return Mono.fromCallable(() -> abacEnforcer.enforce(user, resource, action))
                 .subscribeOn(Schedulers.boundedElastic());
     }
+    public void initializePolicies() {
+        // Politiques pour le rôle admin
+        addPolicy("admin", "/api/users", "GET").block();
+        addPolicy("admin", "/api/users", "POST").block();
+        addPolicy("admin", "/api/users", "PUT").block();
+        addPolicy("admin", "/api/users", "DELETE").block();
 
-    public boolean isAllowed(String bob, String id, String read) {
-        return enforcer.enforce(bob, id, read);
+        // Politiques pour le rôle user
+        addPolicy("user", "/api/users", "GET").block();
+        addPolicy("user", "/api/profile", "GET").block();
+        addPolicy("user", "/api/profile", "PUT").block();
     }
 }
