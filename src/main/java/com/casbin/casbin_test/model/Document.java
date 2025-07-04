@@ -16,8 +16,8 @@ public class Document {
     private String content;
     private String owner;
     private String category; // Ajout de la propriété manquante
-    private String sharedWithJson = "{}";
-    private String permissionsJson = "{}";
+    private String sharedWithJson = "{}"; //savoir a qui est partagé le document
+    private String permissionsJson = "{}";// savoir les permissions de chaque utilisateur sur le document
 
     // Constructeurs
     public Document() {}

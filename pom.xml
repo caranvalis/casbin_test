@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.3</version>
+        <version>3.1.4</version>
         <relativePath/>
     </parent>
 
@@ -21,6 +21,16 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
+
+    <!-- Repositories : seulement si besoin de versions non centralisées -->
+    <!--
+    <repositories>
+        <repository>
+            <id>github-casbin</id>
+            <url>https://maven.pkg.github.com/casbin/jcasbin-jdbc-adapter</url>
+        </repository>
+    </repositories>
+    -->
 
     <dependencies>
         <!-- Spring Boot Core -->
@@ -39,7 +49,7 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
-            <version>2.7.0</version>
+            <version>2.5.0</version>
         </dependency>
 
         <!-- Validation -->
@@ -48,7 +58,7 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- R2DBC -->
+        <!-- R2DBC PostgreSQL -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-r2dbc</artifactId>
@@ -65,26 +75,26 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Spring Security (sans version explicite) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
-            <version>3.2.0</version> <!-- Ou une version compatible avec votre Spring Boot -->
         </dependency>
 
-        <!-- Flyway
-      <dependency>
-          <groupId>org.flywaydb</groupId>
-          <artifactId>flyway-core</artifactId>
+        <!-- Flyway -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
             <version>9.22.3</version>
-          <exclusions>
-              <exclusion>
-                  <groupId>org.flywaydb</groupId>
-                  <artifactId>flyway-telemetry</artifactId>
-              </exclusion>
-          </exclusions>
-      </dependency>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.flywaydb</groupId>
+                    <artifactId>flyway-telemetry</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-        <!- Casbin -->
+        <!-- Casbin -->
         <dependency>
             <groupId>org.casbin</groupId>
             <artifactId>casbin-spring-boot-starter</artifactId>
@@ -96,14 +106,14 @@
             <version>1.82.0</version>
         </dependency>
 
-        <!-- Utilities -->
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
 
-        <!-- Testing -->
+        <!-- Tests -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -115,12 +125,11 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-
-
     </dependencies>
 
     <build>
@@ -132,22 +141,22 @@
             </plugin>
 
             <!-- Flyway Maven Plugin -->
-            <!--            <plugin>-->
-            <!--                <groupId>org.flywaydb</groupId>-->
-            <!--                <artifactId>flyway-maven-plugin</artifactId>-->
-            <!--                <version>9.22.3</version>-->
-            <!--                <configuration>-->
-            <!--                    <url>jdbc:postgresql://localhost:5432/casbin_test</url>-->
-            <!--                    <user>postgres</user>-->
-            <!--                    <password>Caranvalis</password>-->
-            <!--                    <schemas>-->
-            <!--                        <schema>public</schema>-->
-            <!--                    </schemas>-->
-            <!--                    <locations>-->
-            <!--                        <location>classpath:db/migration</location>-->
-            <!--                    </locations>-->
-            <!--                </configuration>-->
-            <!--            </plugin>-->
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>9.22.3</version>
+                <configuration>
+                    <url>jdbc:postgresql://localhost:5432/casbin_test</url>
+                    <user>postgres</user>
+                    <password>Caranvalis</password>
+                    <schemas>
+                        <schema>public</schema>
+                    </schemas>
+                    <locations>
+                        <location>classpath:db/migration</location>
+                    </locations>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

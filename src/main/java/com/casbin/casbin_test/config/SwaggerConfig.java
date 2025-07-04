@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
 
+    // Groupe des API publiques (accessible sans authentification stricte)
     @Bean
     public GroupedOpenApi publicApi() {
         return GroupedOpenApi.builder()
@@ -19,21 +20,23 @@ public class SwaggerConfig {
                 .build();
     }
 
+    // Groupe des API d’administration ou restreintes
     @Bean
     public GroupedOpenApi adminApi() {
         return GroupedOpenApi.builder()
                 .group("admin-api")
-                .pathsToMatch("/admin/**")
+                .pathsToMatch("/api/**")
                 .build();
     }
 
+    // Description globale de ton API
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
                         .title("Casbin Test API")
                         .version("1.0.0")
-                        .description("API de gestion des utilisateurs et d'autorisation avec Casbin")
+                        .description("API de gestion des utilisateurs et d'autorisation avec Casbin (WebFlux + R2DBC)")
                         .contact(new Contact()
                                 .name("Équipe de développement")
                                 .email("dev@example.com")
