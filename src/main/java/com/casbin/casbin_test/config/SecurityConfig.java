@@ -24,6 +24,16 @@ public class SecurityConfig {
     public MapReactiveUserDetailsService userDetailsService() {
         PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
+        UserDetails admin = User.withUsername("admin")
+                .password(encoder.encode("password"))
+                .roles("ADMIN")
+                .build();
+
+        UserDetails publicUser = User.withUsername("public")
+                .password(encoder.encode("password"))
+                .roles("PUBLIC")
+                .build();
+
         UserDetails alice = User.withUsername("alice")
                 .password(encoder.encode("password"))
                 .roles("USER")
@@ -33,12 +43,15 @@ public class SecurityConfig {
                 .password(encoder.encode("password"))
                 .roles("USER")
                 .build();
+
         UserDetails Zaim = User.withUsername("zaim")
                 .password(encoder.encode("password"))
                 .roles("USER")
                 .build();
 
-        return new MapReactiveUserDetailsService(alice, bob, Zaim);
+        return new MapReactiveUserDetailsService(admin, publicUser, alice, bob, Zaim);
+
+
     }
 
     @Bean
@@ -68,6 +81,8 @@ public class SecurityConfig {
                                         .type(SecurityScheme.Type.HTTP)
                                         .scheme("basic")));
     }
+
+
 
 
 }

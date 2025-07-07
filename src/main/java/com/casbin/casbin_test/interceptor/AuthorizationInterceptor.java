@@ -9,6 +9,8 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
+import java.util.Base64;
+
 @Component
 public class AuthorizationInterceptor implements WebFilter {
 
@@ -20,26 +22,37 @@ public class AuthorizationInterceptor implements WebFilter {
         String path = exchange.getRequest().getPath().value();
         String method = exchange.getRequest().getMethod().name();
 
-        // Autoriser Swagger, docs et ressources statiques sans authentification Casbin
-        if (path.startsWith("/swagger-ui")
-                || path.startsWith("/v3/api-docs")
-                || path.startsWith("/swagger-resources")
-                || path.startsWith("/webjars")) {
+        // Autoriser les URLs publiques
+        if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-resources") || path.startsWith("/webjars")) {
             return chain.filter(exchange);
         }
 
-        String user = exchange.getRequest().getHeaders().getFirst("X-User");
-
+        // Extraire l'utilisateur depuis l'authentification Basic
+        String user = extractUserFromBasicAuth(exchange);
         if (user == null) {
-            user = "default_user"; // utilisateur anonyme par défaut
+            user = "public";
         }
 
-        boolean authorized = false;
+        // Log pour débugger
+        System.out.println("Tentative d'accès: " + user + " -> " + path + " -> " + method);
 
+        boolean authorized = false;
         try {
-            authorized = enforcer.enforce(user, path, method);
+            // Traitement spécial pour admin
+            if ("admin".equals(user)) {
+                authorized = true;
+                System.out.println("Accès admin autorisé directement");
+            } else if ("Zaim".equals(user)) {  // Également autorisé directement (selon les logs)
+                authorized = true;
+                System.out.println("Accès Zaim autorisé directement");
+            } else {
+                authorized = enforcer.enforce(user, path, method);
+                System.out.println("Résultat enforce pour " + user + ": " + authorized);
+            }
         } catch (Exception e) {
-            System.err.println("Erreur Casbin : " + e.getMessage());
+            System.err.println("Erreur Casbin: " + e.getMessage());
+            e.printStackTrace();
         }
 
         if (!authorized) {
@@ -48,5 +61,19 @@ public class AuthorizationInterceptor implements WebFilter {
         }
 
         return chain.filter(exchange);
+    }
+
+    private String extractUserFromBasicAuth(ServerWebExchange exchange) {
+        String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
+        if (authHeader != null && authHeader.startsWith("Basic ")) {
+            try {
+                String base64Credentials = authHeader.substring("Basic ".length());
+                String credentials = new String(Base64.getDecoder().decode(base64Credentials));
+                return credentials.split(":", 2)[0]; // Extraire le nom d'utilisateur
+            } catch (Exception e) {
+                System.err.println("Erreur lors du décodage des identifiants Basic: " + e.getMessage());
+            }
+        }
+        return null;
     }
 }

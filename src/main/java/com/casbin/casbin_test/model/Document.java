@@ -3,6 +3,7 @@ package com.casbin.casbin_test.model;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.Map;
@@ -15,9 +16,13 @@ public class Document {
     private String title;
     private String content;
     private String owner;
-    private String category; // Ajout de la propriété manquante
-    private String sharedWithJson = "{}"; //savoir a qui est partagé le document
-    private String permissionsJson = "{}";// savoir les permissions de chaque utilisateur sur le document
+    private String category;
+
+    @Column("shared_with_json")
+    private String sharedWithJson = "{}"; // savoir a qui est partagé le document
+
+    @Column("permissions_json")
+    private String permissionsJson = "{}"; // savoir les permissions de chaque utilisateur sur le document
 
     // Constructeurs
     public Document() {}
@@ -27,8 +32,6 @@ public class Document {
         this.content = content;
         this.owner = owner;
         this.category = category;
-        this.sharedWithJson = "{}";
-        this.permissionsJson = "{}";
     }
 
     // Getters et Setters complets
@@ -61,6 +64,7 @@ public class Document {
     public boolean isSharedWith(String userId) {
         return this.sharedWithJson != null && this.sharedWithJson.contains(userId);
     }
+
     public void shareWith(String userId, String permission) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();

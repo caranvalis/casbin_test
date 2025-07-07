@@ -1,4 +1,0 @@
-p, sub.name == "alice", obj.id == "data1", read, allow
-p, sub.name == "bob", obj.id == "data2", write, allow
-p, sub.role == "data_group_admin", obj.id == "data3", read, allow
-p, sub.name == "anonymous", obj.id == "data1", read, deny

@@ -1,6 +1,0 @@
-p, admin, /api/hello, GET
-p, admin, /api/data, GET
-p, admin, /api/data, POST
-
-g, alice, admin
-g, bob, admin

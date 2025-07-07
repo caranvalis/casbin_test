@@ -30,6 +30,11 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    public Mono<Void> deleteById(String id) {
+        return null;
+    }
+
+    @Override
     public Mono<Void> delete(String id) {
         return documentRepository.deleteById(id);
     }
