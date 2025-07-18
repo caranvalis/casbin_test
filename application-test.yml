@@ -1,0 +1,21 @@
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/casbin_test
+    username: postgres
+    password: Caranvalis
+  flyway:
+    url: jdbc:postgresql://localhost:5432/casbin_test
+    user: postgres
+    password: Caranvalis
+    enabled: true
+    baseline-on-migrate: true
+
+casbin:
+  enable: true
+  model: classpath:casbin/model.conf
+  policy: classpath:casbin/policy.csv
+  enable-watcher: false
+  auto-save: true
+
+server:
+  port: 8080

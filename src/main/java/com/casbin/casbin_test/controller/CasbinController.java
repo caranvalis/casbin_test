@@ -1,61 +1,54 @@
 package com.casbin.casbin_test.controller;
 
-import org.casbin.jcasbin.main.Enforcer;
+import com.casbin.casbin_test.service.CasbinService;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/casbin")
 public class CasbinController {
 
-    private final Enforcer rbacEnforcer;
+    private final CasbinService casbinService;
 
-    // Gars on va  Garder uniquement ce constructeur
-    public CasbinController(Enforcer rbacEnforcer) {
-        this.rbacEnforcer = rbacEnforcer;
+    public CasbinController(CasbinService casbinService) {
+        this.casbinService = casbinService;
     }
 
     @PostMapping("/policy/add")
-    public boolean addPolicy(@RequestBody Map<String, Object> request) {
+    public Mono<Boolean> addPolicy(@RequestBody Map<String, Object> request) {
         List<String> params = (List<String>) request.get("params");
-        String[] stringArray = params.toArray(new String[0]);
-        return rbacEnforcer.addPolicy(stringArray);
+        return casbinService.addPolicy(params);
     }
 
     @GetMapping("/policies")
-    public List<List<String>> getPolicies() {
-        return rbacEnforcer.getPolicy();
+    public Mono<List<List<String>>> getPolicies() {
+        return casbinService.getPolicies();
     }
 
     @PostMapping("/enforce")
-    public boolean enforce(@RequestBody Map<String, String> request) {
+    public Mono<Boolean> enforce(@RequestBody Map<String, String> request) {
         String sub = request.get("sub");
         String obj = request.get("obj");
         String act = request.get("act");
-        return rbacEnforcer.enforce(sub, obj, act);
+        return casbinService.checkPermission(sub, obj, act);
     }
 
     @PostMapping("/policy/delete")
-    public boolean deletePolicy(@RequestBody Map<String, Object> request) {
+    public Mono<Boolean> deletePolicy(@RequestBody Map<String, Object> request) {
         List<String> params = (List<String>) request.get("params");
-        String[] stringArray = params.toArray(new String[0]);
-        return rbacEnforcer.removePolicy(stringArray);
+        return casbinService.removePolicy(params);
     }
 
     @PostMapping("/policy/clear")
-    public void clearPolicy() {
-        rbacEnforcer.clearPolicy();
+    public Mono<Void> clearPolicy() {
+        return casbinService.clearPolicy();
     }
+
     @GetMapping("/debug")
-    public Map<String, Object> debugCasbin() {
-        Map<String, Object> result = new HashMap<>();
-        result.put("policies", rbacEnforcer.getPolicy());
-        result.put("groupingPolicies", rbacEnforcer.getGroupingPolicy());
-        result.put("subjects", rbacEnforcer.getAllSubjects());
-        result.put("objects", rbacEnforcer.getAllObjects());
-        result.put("actions", rbacEnforcer.getAllActions());
-        return result;
+    public Mono<Map<String, Object>> debugCasbin() {
+        return casbinService.getPolicies()
+                .map(policies -> Map.of("policies", policies));
     }
 }

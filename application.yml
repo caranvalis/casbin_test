@@ -1,0 +1,68 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: casbin-app
+
+  main:
+    allow-bean-definition-overriding: true
+
+  jackson:
+    serialization:
+      INDENT_OUTPUT: true
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://db:5432/casbin_test
+    username: postgres
+    password: Caranvalis
+  flyway:
+    url: jdbc:postgresql://db:5432/casbin_test
+    user: postgres
+    password: Caranvalis
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://tempo:4318
+    metrics:
+      export:
+        enabled: false
+  spring:
+    security:
+      oauth2:
+        resourceserver:
+          jwt:
+            issuer-uri: http://localhost:8081/realms/casbin
+        client:
+          registration:
+            keycloak:
+              client-id: casbin-app
+              authorization-grant-type: password
+              redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+          provider:
+            keycloak:
+              issuer-uri: http://localhost:8081/realms/casbin
+              user-name-attribute: preferred_username
+
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+    name: /var/log/application.log

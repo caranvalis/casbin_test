@@ -1,8 +1,10 @@
 package com.casbin.casbin_test.config;
 
 import com.casbin.casbin_test.adapter.R2dbcCasbinAdapter;
+import com.casbin.casbin_test.model.Resource;
 import org.casbin.jcasbin.main.Enforcer;
 import org.casbin.jcasbin.model.Model;
+import org.flywaydb.core.internal.resource.classpath.ClassPathResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -80,6 +82,8 @@ public class CasbinConfig {
         enforcer.addPolicy("delete");
         return enforcer;
     }
+
+
 
     @Bean
     public CommandLineRunner initPolicies(Enforcer enforcer) {

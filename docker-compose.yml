@@ -1,0 +1,134 @@
+
+networks:
+  monitoring:
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_R2DBC_URL: r2dbc:postgresql://db:5432/casbin_test
+      SPRING_R2DBC_USERNAME: postgres
+      SPRING_R2DBC_PASSWORD: Caranvalis
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/mon-realm
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/mon-realm/protocol/openid-connect/certs
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - monitoring
+
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: casbin_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Caranvalis
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak-db:
+    image: postgres:15
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - keycloak-db-data:/var/lib/postgresql/data
+    networks:
+      - monitoring
+
+    keycloak:
+      image: quay.io/keycloak/keycloak:24.0.2
+      container_name: keycloak
+      command: start-dev --import-realm
+      environment:
+        KEYCLOAK_ADMIN: admin
+        KEYCLOAK_ADMIN_PASSWORD: admin
+        KC_DB: postgres
+        KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+        KC_DB_USERNAME: keycloak
+        KC_DB_PASSWORD: keycloak
+      ports:
+        - "8081:8080"
+      volumes:
+        - keycloak-data:/opt/keycloak/data
+        - ./keycloak/realms:/opt/keycloak/data/import
+      depends_on:
+        - keycloak-db
+      networks:
+        - monitoring
+
+  volumes:
+    keycloak-data:
+    keycloak-db-data:
+
+
+    prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: loki
+    ports:
+      - "3101:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitoring
+
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./tempo.yaml:/etc/tempo/tempo.yaml
+    command: [ "-config.file=/etc/tempo/tempo.yaml" ]
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-clock-panel
+    networks:
+      - monitoring
+
+volumes:
+  postgres-data:
+  keycloak-data:
+  grafana-data:
