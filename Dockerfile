@@ -1,31 +1,30 @@
-# Étape 1 : build avec Maven
-FROM eclipse-temurin:21 AS builder
+# Étape 1 : Build avec Maven
+FROM maven:3.9.8-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /app
 
+COPY pom.xml .
 COPY mvnw .
 COPY .mvn .mvn
-COPY pom.xml .
 
-# Donner les droits d'exécution à mvnw
-RUN chmod +x ./mvnw
+RUN chmod +x ./mvnw && \
+    ./mvnw dependency:go-offline -B
 
-# Télécharger les dépendances d'abord pour bénéficier du cache Docker
-RUN ./mvnw dependency:go-offline
-
-# Copier le code source
 COPY src ./src
+RUN ./mvnw clean package -DskipTests -B && \
+    rm -rf /root/.m2/repository
 
-# Compiler l'application avec plus de logs
-RUN ./mvnw clean package -DskipTests -X
-
-# Étape 2 : image finale
-FROM eclipse-temurin:21
+# Étape 2 : Image finale
+FROM bellsoft/liberica-runtime-container:jre-21-slim-musl
 
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 COPY --from=builder /app/src/main/resources/db/migration /app/src/main/resources/db/migration
 
-EXPOSE 8080
+RUN chown -R 1001:1001 /app
+
+USER 1001
+
+EXPOSE 8082
 
 CMD ["java", "-jar", "app.jar"]

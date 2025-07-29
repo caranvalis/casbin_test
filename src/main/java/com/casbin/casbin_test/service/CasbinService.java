@@ -17,7 +17,7 @@ public class CasbinService {
     public Mono<Boolean> checkPermission(String subject, String object, String action) {
         return Mono.fromCallable(() -> enforcer.enforce(subject, object, action));
     }
-
+ 
     public Mono<Boolean> addPolicy(List<String> params) {
         String[] stringArray = params.toArray(new String[0]);
         return Mono.fromCallable(() -> enforcer.addPolicy(stringArray));

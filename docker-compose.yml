@@ -1,4 +1,4 @@
-
+version: '3.8'
 networks:
   monitoring:
 
@@ -8,20 +8,22 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "8082:8082"
     environment:
       SPRING_PROFILES_ACTIVE: dev
-      SPRING_R2DBC_URL: r2dbc:postgresql://db:5432/casbin_test
       SPRING_R2DBC_USERNAME: postgres
       SPRING_R2DBC_PASSWORD: Caranvalis
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/mon-realm
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/mon-realm/protocol/openid-connect/certs
+      SPRING_R2DBC_URL: r2dbc:postgresql://db:5432/casbin_test?schema=public
+      SPRING_FLYWAY_ENABLED: true
+      SPRING_FLYWAY_URL: jdbc:postgresql://db:5432/casbin_test
+      SPRING_FLYWAY_USER: postgres
+      SPRING_FLYWAY_PASSWORD: Caranvalis
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
     depends_on:
       db:
         condition: service_healthy
     networks:
       - monitoring
-
 
   db:
     image: postgres:15
@@ -33,56 +35,21 @@ services:
       - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    networks:
-      - monitoring
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres -d casbin_test"]
+      interval: 5s
       timeout: 5s
-      retries: 5
-
-  keycloak-db:
-    image: postgres:15
-    container_name: keycloak-db
-    environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: keycloak
-    volumes:
-      - keycloak-db-data:/var/lib/postgresql/data
+      retries: 10
+      start_period: 60s
     networks:
       - monitoring
 
-    keycloak:
-      image: quay.io/keycloak/keycloak:24.0.2
-      container_name: keycloak
-      command: start-dev --import-realm
-      environment:
-        KEYCLOAK_ADMIN: admin
-        KEYCLOAK_ADMIN_PASSWORD: admin
-        KC_DB: postgres
-        KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
-        KC_DB_USERNAME: keycloak
-        KC_DB_PASSWORD: keycloak
-      ports:
-        - "8081:8080"
-      volumes:
-        - keycloak-data:/opt/keycloak/data
-        - ./keycloak/realms:/opt/keycloak/data/import
-      depends_on:
-        - keycloak-db
-      networks:
-        - monitoring
-
-  volumes:
-    keycloak-data:
-    keycloak-db-data:
-
-
-    prometheus:
+  prometheus:
     image: prom/prometheus:latest
     volumes:
-      - ./monitoring/prometheus:/etc/prometheus
+      - ./grafana/Datasources/prometheus-datasource.yml:/etc/prometheus/datasources/prometheus-datasource.yml
+      - ./monitoring/prometheus/prometheus.yml:/etc/monitoring/prometheus/prometheus.yml
+    container_name: prometheus
     ports:
       - "9090:9090"
     networks:
@@ -106,7 +73,7 @@ services:
       - "4318:4318"
     volumes:
       - ./tempo.yaml:/etc/tempo/tempo.yaml
-    command: [ "-config.file=/etc/tempo/tempo.yaml" ]
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
     networks:
       - monitoring
 
@@ -124,11 +91,12 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-clock-panel
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-clock-panel,grafana-metricsdrilldown-app,grafana-lokiexplore-app,grafana-pyroscope-app,grafana-exploretraces-app
     networks:
       - monitoring
 
 volumes:
   postgres-data:
   keycloak-data:
+  keycloak-db-data:
   grafana-data:
