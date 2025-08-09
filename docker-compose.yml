@@ -1,12 +1,12 @@
-version: '3.8'
+
 networks:
   monitoring:
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
+    container_name: casbin-app
+    restart: unless-stopped
     ports:
       - "8082:8082"
     environment:
@@ -19,6 +19,17 @@ services:
       SPRING_FLYWAY_USER: postgres
       SPRING_FLYWAY_PASSWORD: Caranvalis
       SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      LOGGING_LEVEL_ORG_SPRINGDOC: DEBUG
+      LOGGING_LEVEL_REACTOR_NETTY_HTTP_SERVER: DEBUG
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    deploy:
+      resources:
+        limits:
+          memory: 512M  # Limite de mémoire maximale
+        reservations:
+          memory: 256M  # Mémoire réservée
+    volumes:
+      - ./logs:/app/logs  # Montage d'un volume pour les logs
     depends_on:
       db:
         condition: service_healthy
@@ -48,18 +59,19 @@ services:
     image: prom/prometheus:latest
     volumes:
       - ./grafana/Datasources/prometheus-datasource.yml:/etc/prometheus/datasources/prometheus-datasource.yml
-      - ./monitoring/prometheus/prometheus.yml:/etc/monitoring/prometheus/prometheus.yml
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     container_name: prometheus
     ports:
       - "9090:9090"
     networks:
       - monitoring
 
+
   loki:
     image: grafana/loki:2.9.4
     container_name: loki
     ports:
-      - "3101:3100"
+      - "3101:3101"
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - monitoring

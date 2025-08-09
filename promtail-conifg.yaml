@@ -13,3 +13,4 @@ scrape_configs:
         labels:
           job: varlogs
           __path__: /var/log/*log
+          app_name: casbin-app

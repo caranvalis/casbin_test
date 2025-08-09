@@ -2,7 +2,7 @@ auth_enabled: false
 
 server:
   http_listen_port: 3101
-
+  grpc_listen_port: 9095
 ingester:
   lifecycler:
     address: 127.0.0.1
@@ -12,6 +12,19 @@ ingester:
       replication_factor: 1
   chunk_idle_period: 5m
   chunk_retain_period: 30s
+
+  common :
+    instance_addr: 127.0.0.1
+    path_prefix: /loki
+    storage:
+      filesystem:
+        chunks_directory: /loki/chunks
+        rules_directory: /loki/rules
+    replication_factor:  1
+    ring:
+        kvstore:
+            store: inmemory
+
 
 schema_config:
   configs:

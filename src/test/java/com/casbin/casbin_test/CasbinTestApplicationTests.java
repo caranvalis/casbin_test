@@ -1,6 +1,6 @@
 package com.casbin.casbin_test;
 
-import com.casbin.casbin_test.service.AuthorizationService;
+import com.casbin.casbin_test.application.services.AuthorizationService;
 import org.casbin.jcasbin.main.Enforcer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
